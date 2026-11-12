@@ -636,6 +636,7 @@ async function play(g){
   EMU.romPtr = M._malloc(size); heap(EMU.romPtr,size).fill(0).set(rom);
   EMU.e = M._emulator_new_simple(EMU.romPtr, size, AU.ctx.sampleRate, AUDIO_FRAMES, 2);
   if (!EMU.e){ M._free(EMU.romPtr); EMU.romPtr=0; SE.err(); return message('コノ ソフト ハ<br>ウゴキマセン<br><br><span style="font-size:4cqw">A / B デ モドル</span>',()=>{ bgmStart(); renderMain(); }); }
+  EMU.jb = M._joypad_new(); M._emulator_set_default_joypad_callback(EMU.e, EMU.jb); emuReleaseAll();  // ボタン入力の受け取り口
   EMU.g = g; EMU.cgb = !!(rom[0x143] & 0x80);
   M._emulator_set_builtin_palette(EMU.e, 0);
   try{ const sv = await DB.get('saves',g.id); if (sv && sv.data) emuSetExtRam(sv.data); }catch(e){}
@@ -689,7 +690,8 @@ function emuPause(){ cancelAnimationFrame(EMU.raf); EMU.raf=0; emuReleaseAll(); 
 function emuResume(){ if(!EMU.raf && EMU.e){ EMU.last=0; EMU.raf=requestAnimationFrame(emuFrame); } }
 async function emuStop(){
   emuPause(); clearInterval(EMU.saveIv); await saveExtRam();
-  if (EMU.e){ EMU.M._emulator_delete(EMU.e); EMU.M._free(EMU.romPtr); }
+  if (EMU.e){ EMU.M._emulator_delete(EMU.e); EMU.M._free(EMU.romPtr); if (EMU.jb) EMU.M._joypad_delete(EMU.jb); }
+  EMU.jb=0;
   EMU.e=0; EMU.romPtr=0; const g=EMU.g; EMU.g=null;
   $('game').style.display='none'; document.body.classList.remove('play'); $('pwr').textContent='◁ OFF·ON ▷';
   return g;
