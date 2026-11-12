@@ -660,6 +660,7 @@ function emuFrame(ms){
     if (ev & EV_AUDIO) emuAudio();
     if (ev & EV_UNTIL) break;
   }
+  emuPendingRelease();
   if (M._emulator_was_ext_ram_updated(EMU.e)) EMU.dirty = true;
   EMU.left = (emuTicks() - until) | 0; EMU.last = sec;
   EMU.ctx.putImageData(EMU.img,0,0);
@@ -684,8 +685,16 @@ function emuAudio(){
   const s=ctx.createBufferSource(); s.buffer=ab; s.connect(AU.gameGain); s.start(EMU.aStart); EMU.aStart += AUDIO_FRAMES/ctx.sampleRate;
 }
 const JOY = {UP:'_set_joyp_up',DOWN:'_set_joyp_down',LEFT:'_set_joyp_left',RIGHT:'_set_joyp_right',A:'_set_joyp_A',B:'_set_joyp_B',START:'_set_joyp_start',SELECT:'_set_joyp_select'};
-function emuKey(k,on){ if(EMU.e && JOY[k]) EMU.M[JOY[k]](EMU.e, on?1:0); }
-function emuReleaseAll(){ Object.keys(JOY).forEach(k=>emuKey(k,false)); }
+// 短いタップでもゲームが必ず受け取れるように、押した状態を最低4フレーム保つ
+const HOLD_TICKS = 70224*4, KEYT = {}, PEND = {};
+function emuKey(k,on){
+  if(!EMU.e || !JOY[k]) return;
+  if (on){ delete PEND[k]; KEYT[k]=emuTicks(); EMU.M[JOY[k]](EMU.e,1); return; }
+  const t=KEYT[k];
+  if (t!==undefined && emuTicks()-t < HOLD_TICKS) PEND[k]=t+HOLD_TICKS; else EMU.M[JOY[k]](EMU.e,0);
+}
+function emuPendingRelease(){ const now=emuTicks(); for (const k in PEND){ if(now>=PEND[k]){ EMU.M[JOY[k]](EMU.e,0); delete PEND[k]; } } }
+function emuReleaseAll(){ Object.keys(JOY).forEach(k=>{ delete PEND[k]; delete KEYT[k]; if(EMU.e) EMU.M[JOY[k]](EMU.e,0); }); }
 function emuPause(){ cancelAnimationFrame(EMU.raf); EMU.raf=0; emuReleaseAll(); EMU.last=0; EMU.aStart=0; }
 function emuResume(){ if(!EMU.raf && EMU.e){ EMU.last=0; EMU.raf=requestAnimationFrame(emuFrame); } }
 async function emuStop(){
