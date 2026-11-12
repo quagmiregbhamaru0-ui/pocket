@@ -143,6 +143,21 @@ input[type=file]{display:none}
   #brand{grid-area:brand;align-self:end;justify-self:center;margin:0 0 2dvh;font-size:min(2vw,3.6dvh)}
   #speaker{display:none}
 }
+
+/* ===== ゲーム中は画面を最大化 ===== */
+.play #device{padding-left:1.5%;padding-right:1.5%}
+.play #bezel{padding:2% 1.8% 2%;border-radius:8px 8px 22px 8px}
+.play #bezel .lines,.play #power{display:none}
+.play #brand{margin-top:2.5%}
+@media (orientation: landscape){
+  .play #device{column-gap:1.5vw;padding-left:calc(env(safe-area-inset-left) + 1.5vw);padding-right:calc(env(safe-area-inset-right) + 1.5vw)}
+  .play #topbar{margin-bottom:.8dvh;padding-bottom:.5dvh}
+  .play #bezel{width:min(64vw,calc((100dvh - 14dvh) * 1.1));padding:1.2dvh;align-self:center}
+  .play #dpad{width:min(13vw,36dvh)}
+  .play #ab{width:min(15vw,40dvh)}
+  .play #ss{width:min(15vw,32dvh)}
+  .play #brand{display:none}
+}
 </style>
 </head>
 <body>
